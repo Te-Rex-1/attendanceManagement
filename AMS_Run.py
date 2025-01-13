@@ -8,6 +8,7 @@ from PIL import Image,ImageTk
 import pandas as pd
 import datetime
 import time
+from main import upload
 
 #####Window is our Main frame of system
 window = tk.Tk()
@@ -407,14 +408,22 @@ def subjectchoose():
                     if key == 27:
                         break
 
+              
                 ts = time.time()
                 date = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d')
                 timeStamp = datetime.datetime.fromtimestamp(ts).strftime('%H:%M:%S')
                 Hour, Minute, Second = timeStamp.split(":")
-                fileName = "Attendance/" + Subject + "_" + date + "_" + Hour + "-" + Minute + "-" + Second + ".csv"
+                fileName = "Attendance/" + Subject + ".csv"
+
                 attendance = attendance.drop_duplicates(['Enrollment'], keep='first')
-                print(attendance)
-                attendance.to_csv(fileName, index=False)
+
+                if os.path.exists(fileName):
+                    # If file exists, rewrite it
+                    attendance.to_csv(fileName, index=False)
+                else:
+                    # If file does not exist, create a new one
+                    attendance.to_csv(fileName, index=False)
+                upload(fileName)
 
                 ##Create table for Attendance
                 date_for_DB = datetime.datetime.fromtimestamp(ts).strftime('%Y_%m_%d')
@@ -695,3 +704,5 @@ quitWindow = tk.Button(window, text="Manually Fill Attendance", command=manually
 quitWindow.place(x=990, y=500)
 
 window.mainloop()
+
+upload("C:\Users\tar30\OneDrive\Desktop\mini Projects\attendanceManagement\StudentDetails\StudentDetails.csv")
