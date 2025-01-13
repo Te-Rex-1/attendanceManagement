@@ -9,6 +9,83 @@ import pandas as pd
 import datetime
 import time
 from main import upload
+import firebase_admin
+from firebase_admin import credentials, db
+import pandas as pd
+ # Initialize Firebase Admin SDK
+cred = credentials.Certificate(r"C:/Users/tar30/OneDrive/Desktop/mini Projects/attendanceManagement\ServiceAccountKey.json")
+firebase_admin.initialize_app(cred, {
+        "databaseURL": "https://mini-project-6e128-default-rtdb.firebaseio.com/"
+    })
+def uploadStudent(file_path):
+   
+
+    # Load CSV file
+    #csv_file = r"C:\Users\tar30\OneDrive\Desktop\mini Projects\attendanceManagement\StudentDetails\StudentDetails.csv"
+    csv_file= file_path
+
+    data = pd.read_csv(csv_file)
+
+    # Reference the Firebase databasez
+    # Reference to the Firebase database
+    # Reference to the Firebase database
+    # Reference to the Firebase database
+    ref = db.reference("studentdata")  # "subjects" is the root node
+
+    # Update data in Firebase
+    for index, row in data.iterrows():
+        user_id = row["Enrollment"]  # Unique identifier for each user (e.g., Enrollment)
+        #subject_name = row["Subject"]  # Subject name (e.g., Math, Chemistry)
+        user_data = {
+            "Enrollment": row["Enrollment"],
+            "Name": row["Name"],  # Assuming you have a "Name" column in your CSV
+            "Date": row["Date"],
+            "Time": row["Time"]
+        }
+
+        # Reference to the subject node
+        #subject_ref = ref.child(subject_name)  # Reference to a specific subject
+
+        # Create or update the user details under the subject node
+        ref.child(str(user_id)).update(user_data)  # This will add or update the user data for the specific subject
+       # subject_ref.child(str(user_id)).update(user_data)
+
+
+
+
+    print("Data has been updated successfully in Firebase.")
+
+def uploadSubjectData(file_path, subject_name):
+    # Load CSV file
+    csv_file = file_path
+
+    # Read CSV data
+    data = pd.read_csv(csv_file)
+
+    # Reference to the Firebase database
+    ref = db.reference("subjects")  # "subjects" is the root node
+
+    # Iterate through the rows and upload the data
+    for index, row in data.iterrows():
+        user_id = row["Enrollment"]  # Unique identifier for each user (e.g., Enrollment)
+
+        # Create the user data
+        user_data = {
+            "Name": row["Name"],  # Name of the student
+            "Date": row["Date"],  # Date of the attendance
+            "Time": row["Time"]   # Time of the attendance
+        }
+
+        # Reference to the specific subject and user
+        subject_ref = ref.child(subject_name).child(str(user_id))
+
+        # Create or update the user details under the subject node
+        subject_ref.update(user_data)  # This will add or update the user data for the specific subject
+
+    print(f"{subject_name} data has been updated successfully in Firebase.")
+
+
+
 
 #####Window is our Main frame of system
 window = tk.Tk()
@@ -55,57 +132,7 @@ def manually_fill():
         subb=SUB_ENTRY.get()
         DB_table_name = str(subb + "_" + Date + "_Time_" + Hour + "_" + Minute + "_" + Second)
 
-        # import pymysql.connections
-
-        # ###Connect to the database
-        # try:
-        #     global cursor
-        #     connection = pymysql.connect(host='localhost', user='root', password='', db='manually_fill_attendance')
-        #     cursor = connection.cursor()
-        # except Exception as e:
-        #     print(e)
-
-        # sql = "CREATE TABLE " + DB_table_name + """
-        #                 (ID INT NOT NULL AUTO_INCREMENT,
-        #                  ENROLLMENT varchar(100) NOT NULL,
-        #                  NAME VARCHAR(50) NOT NULL,
-        #                  DATE VARCHAR(20) NOT NULL,
-        #                  TIME VARCHAR(20) NOT NULL,
-        #                      PRIMARY KEY (ID)
-        #                      );
-        #                 """
-
-
-        # try:
-        #     cursor.execute(sql)  ##for create a table
-        # except Exception as ex:
-        #     print(ex)  #
-        import firebase_admin
-        from firebase_admin import credentials, firestore
-
-        # Initialize Firebase Admin SDK
-        cred = credentials.Certificate("path/to/your-service-account-key.json")
-        firebase_admin.initialize_app(cred)
-
-        db = firestore.client()
-
-        def save_attendance_to_firebase(data):
-            try:
-                doc_ref = db.collection('Attendance').document(data['id'])
-                doc_ref.set(data)
-                print("Attendance data saved successfully!")
-            except Exception as e:
-                print(f"Error saving attendance data: {e}")
-
-        # Your main code
-        attendance_data = {
-            "id": "20250113",
-            "name": "John Doe",
-            "date": "2025-01-13",
-            "status": "Present"
-        }
-
-        save_attendance_to_firebase(attendance_data)
+       
 
 
 
@@ -330,7 +357,7 @@ def take_img():
             Date = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d')
             Time = datetime.datetime.fromtimestamp(ts).strftime('%H:%M:%S')
             row = [Enrollment, Name, Date, Time]
-            with open('StudentDetails\StudentDetails.csv', 'a+') as csvFile:
+            with open('StudentDetails/StudentDetails.csv', 'a+') as csvFile:
                 writer = csv.writer(csvFile, delimiter=',')
                 writer.writerow(row)
                 csvFile.close()
@@ -355,7 +382,7 @@ def subjectchoose():
             else:
                 recognizer = cv2.face.LBPHFaceRecognizer_create()  # cv2.createLBPHFaceRecognizer()
                 try:
-                    recognizer.read("TrainingImageLabel\Trainner.yml")
+                    recognizer.read("TrainingImageLabel/Trainner.yml")
                 except:
                     e = 'Model not found,Please train model'
                     Notifica.configure(text=e, bg="red", fg="black", width=33, font=('times', 15, 'bold'))
@@ -363,7 +390,7 @@ def subjectchoose():
 
                 harcascadePath = "haarcascade_frontalface_default.xml"
                 faceCascade = cv2.CascadeClassifier(harcascadePath)
-                df = pd.read_csv("StudentDetails\StudentDetails.csv")
+                df = pd.read_csv("StudentDetails/StudentDetails.csv")
                 cam = cv2.VideoCapture(0)
                 font = cv2.FONT_HERSHEY_SIMPLEX
                 col_names = ['Enrollment', 'Name', 'Date', 'Time']
@@ -402,7 +429,7 @@ def subjectchoose():
                     if time.time() > future:
                         break
 
-                    attendance = attendance.drop_duplicates(['Enrollment'], keep='first')
+                    #attendance = attendance.drop_duplicates(['Enrollment'], keep='first')
                     cv2.imshow('Filling attedance..', im)
                     key = cv2.waitKey(30) & 0xff
                     if key == 27:
@@ -415,15 +442,10 @@ def subjectchoose():
                 Hour, Minute, Second = timeStamp.split(":")
                 fileName = "Attendance/" + Subject + ".csv"
 
-                attendance = attendance.drop_duplicates(['Enrollment'], keep='first')
+                #attendance = attendance.drop_duplicates(['Enrollment'], keep='first')
 
-                if os.path.exists(fileName):
-                    # If file exists, rewrite it
-                    attendance.to_csv(fileName, index=False)
-                else:
-                    # If file does not exist, create a new one
-                    attendance.to_csv(fileName, index=False)
-                upload(fileName)
+                attendance.to_csv(fileName, index=False)
+                uploadSubjectData(fileName,Subject)
 
                 ##Create table for Attendance
                 date_for_DB = datetime.datetime.fromtimestamp(ts).strftime('%Y_%m_%d')
@@ -598,8 +620,34 @@ def admin_panel():
 
 
 ###For train the model
+# def trainimg():
+#     recognizer = cv2.face.LBPHFaceRecognizer_create()
+#     global detector
+#     detector = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
+#     try:
+#         global faces,Id
+#         faces, Id = getImagesAndLabels("TrainingImage")
+#     except Exception as e:
+#         l='please make "TrainingImage" folder & put Images'
+#         Notification.configure(text=l, bg="SpringGreen3", width=50, font=('times', 18, 'bold'))
+#         Notification.place(x=350, y=400)
+
+#     recognizer.train(faces, np.array(Id))
+#     try:
+#         recognizer.save("TrainingImageLabel/Trainner.yml")
+#     except Exception as e:
+#         q='Please make "TrainingImageLabel" folder'
+#         Notification.configure(text=q, bg="SpringGreen3", width=50, font=('times', 18, 'bold'))
+#         Notification.place(x=350, y=400)
+
+#     res = "Model Trained"  # +",".join(str(f) for f in Id)
+#     Notification.configure(text=res, bg="SpringGreen3", width=50, font=('times', 18, 'bold'))
+#     Notification.place(x=250, y=400)
+
 def trainimg():
+    #recognizer = cv2.face.LBPHFaceRecognizer_create()
     recognizer = cv2.face.LBPHFaceRecognizer_create()
+
     global detector
     detector = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
     try:
@@ -612,7 +660,7 @@ def trainimg():
 
     recognizer.train(faces, np.array(Id))
     try:
-        recognizer.save("TrainingImageLabel\Trainner.yml")
+        recognizer.save("TrainingImageLabel/Trainner.yml")
     except Exception as e:
         q='Please make "TrainingImageLabel" folder'
         Notification.configure(text=q, bg="SpringGreen3", width=50, font=('times', 18, 'bold'))
@@ -705,4 +753,4 @@ quitWindow.place(x=990, y=500)
 
 window.mainloop()
 
-upload("C:\Users\tar30\OneDrive\Desktop\mini Projects\attendanceManagement\StudentDetails\StudentDetails.csv")
+uploadStudent("C:/Users/tar30/OneDrive/Desktop/mini Projects/attendanceManagement/StudentDetails/StudentDetails.csv")
